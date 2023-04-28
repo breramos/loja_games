@@ -1,5 +1,6 @@
 package com.generation.lojagames.controller;
 
+import java.math.BigDecimal;
 import java.util.List;
 import java.util.Optional;
 
@@ -62,19 +63,33 @@ public class ProdutoController {
 	
 	@PostMapping
 	public ResponseEntity<Produto> post (@Valid @RequestBody Produto produto) {
-		return ResponseEntity.status(HttpStatus.CREATED)
+		
+		if (categoriaRepository.existsById(produto.getCategoria().getId()))
+			return ResponseEntity.status(HttpStatus.CREATED)
 				.body(produtoRepository.save(produto));
+		
+		throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Categoria não existe!", null);
+		
 		
 	}
 	
 	@PutMapping
 	public ResponseEntity<Produto> put(@Valid @RequestBody Produto produto) {
+					
+		if (produtoRepository.existsById(produto.getId())) {
+					
+					if (categoriaRepository.existsById(produto.getCategoria().getId()))
+						return ResponseEntity.status(HttpStatus.OK)
+								.body(produtoRepository.save(produto));
+							
+					throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Produto não existe!", null);
+					
+		}
 		
-		return produtoRepository.findById(produto.getId())
-				.map(resposta -> ResponseEntity.status(HttpStatus.OK)
-					.body(produtoRepository.save(produto)))
-					.orElse(ResponseEntity.status(HttpStatus.NOT_FOUND).build());
-						
+		return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
+		
+		
+		
 	}
 	
 	
@@ -90,6 +105,24 @@ public class ProdutoController {
 		produtoRepository.deleteById(id);
 		
 	}
+	
+	// Consulta pelo preço maior do que o preço digitado em ordem crescente
+	
+	@GetMapping("/preco_maior/{preco}")
+	public ResponseEntity<List<Produto>> getPrecoMaiorQue(@PathVariable BigDecimal preco){ 
+		
+		return ResponseEntity.ok(produtoRepository.findAllByPrecoGreaterThanOrderByPreco(preco));
+		
+	}
+	
+	// Consulta pelo preço menor do que o preço digitado em ordem decrescente
+	
+	@GetMapping("/preco_menor/{preco}")
+	public ResponseEntity<List<Produto>> getPrecoMenorQue(@PathVariable BigDecimal preco){ 
+		
+		return ResponseEntity.ok(produtoRepository.findAllByPrecoLessThanOrderByPrecoDesc(preco));
+	}
+	
 	
 	
 }
